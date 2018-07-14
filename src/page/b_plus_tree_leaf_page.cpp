@@ -7,7 +7,7 @@
 #include "common/exception.h"
 #include "common/rid.h"
 #include "page/b_plus_tree_leaf_page.h"
-
+#include "page/b_plus_tree_internal_page.h"
 namespace cmudb {
 
 /*****************************************************************************
@@ -96,13 +96,14 @@ int B_PLUS_TREE_LEAF_PAGE_TYPE::Insert(const KeyType &key,
                                        const KeyComparator &comparator) {
     /* do not consider overflow, if this happens, B+ tree will deal with 
      * boundary check */
+    assert(cur_size < GetMaxSize());
     int cur_size = GetSize();
     //int max_size = GetMaxSize();
     int keyid_to_replace = KeyIndex(key, comparator);
     for (int i = cur_size; i > keyid_to_replace; i--)
         array[i] = array[i-1];
     array[keyid_to_replace] = std::make_pair(key, value);
-    SetSize(cur_size + 1);
+    IncreaseSize(1);
     return cur_size + 1; 
 }
 
@@ -116,27 +117,24 @@ INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveHalfTo(
     BPlusTreeLeafPage *recipient,
     __attribute__((unused)) BufferPoolManager *buffer_pool_manager) {
-    page_id_t new_page_id = INVALID_PAGE_ID;
-    //Page* new_page = buffer_pool_manager->NewPage(new_page_id);
     /* how many elements to move */
     int cur_size = GetSize();
-    int max_size = GetMaxSize();
-    // assert(cur_size == max_size);
-    int left_half = (cur_size + 1)  / 2;
-    recipient->CopyHalfFrom(&array[left_half], max_size - left_half);
-    SetSize(left_half);
-    SetNextPageId(new_page_id);
+    int left_half = GetMinSize();
+    recipient->CopyHalfFrom(&array[left_half], cur_size - left_half);
+    SetNextPageId(recipient->GetPageId());
+    IncreaseSize(-1 * (cur_size - left_half));
 }
 
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_LEAF_PAGE_TYPE::CopyHalfFrom(MappingType *items, int size) {
     /* not sure whether this function can only be called from MoveHalfTp */
-    int cur_size = GetSize();
-    // int max_size = GetMaxSize();
-    //assert(cur_size + size <= max_size);
+    //assert(GetSize() + size <= GetMaxSize());
+    //int cur_size = GetSize();
+    // move initial values from [0-cursize] to [
+    
     for (int i = 0; i < size; i++)
-        array[cur_size + i] = items[i];
-    SetSize(size);
+        array[i] = items[i];
+    IncreaseSize(size);
 }
 
 /*****************************************************************************
@@ -181,7 +179,7 @@ int B_PLUS_TREE_LEAF_PAGE_TYPE::RemoveAndDeleteRecord(
         for (int i = key_to_remove; i < cur_size - 1; i++) {
             array[i] = array[i + 1];
         }
-        SetSize(cur_size - 1);
+        IncreaseSize(-1);
         return cur_size - 1;
     } else 
         return -1;
@@ -197,20 +195,14 @@ int B_PLUS_TREE_LEAF_PAGE_TYPE::RemoveAndDeleteRecord(
 /* Here B+ tree should copy larger value to the back of small value */
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveAllTo(BPlusTreeLeafPage *recipient,
-                                           int, BufferPoolManager *buffer_pool_manager) {
+                                           int, BufferPoolManager *) {
     int cur_size = GetSize();
     // int max_size = GetMaxSize();
     // int another_size = recipient->GetSize();
     // assert(another_size <= max_size / 2 || cur_size <= max_size / 2);
     recipient->CopyAllFrom(array, cur_size);
-    /* [Bug] Here I find one bug in interface design, I think the author still think there is
-     * a dummy node in leaf node, and use the `MoveFirstToEndof` and `MoveLastToFrontOf`
-     * to control the node update. 
-     * Actually, in this step all values has been moved to `recipient`, and there
-     * has been no element in current node. 
-     * We need to make sure this page come back to buffer pool and update parent node*/
+    recipient->SetNextPageId(GetNextPageId());
     /* reset parent page key */
-    page_id_t cur_page_id = GetPageId();
     // Page* cur_page = buffer_pool_manager->FetchPage(cur_page_id);
     // auto* cur_node = reinterpret_cast<B_PLUS_TREE_LEAF_PAGE_TYPE*>(cur_page->GetData());
     // page_id_t parent_id = cur_node->GetParentPageId();
@@ -238,12 +230,11 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveAllTo(BPlusTreeLeafPage *recipient,
      * We have to fetch via parent node, this is the design problem
      * in b_plus_tree_leaf_page data structure, from my point of view, 
      * it should add a prev_page_id */
-    buffer_pool_manager->DeletePage(cur_page_id);
-    buffer_pool_manager->UnpinPage(cur_page_id, true);
 }
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_LEAF_PAGE_TYPE::CopyAllFrom(MappingType *items, int size) {
     int cur_size = GetSize();
+    assert(cur_size + size <= GetMaxSize());
     // int max_size = GetMaxSize();
     // assert(cur_size + size <= max_size);
     /* B+ tree is responsible to maintain the order */
@@ -264,11 +255,23 @@ INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveFirstToEndOf(
     BPlusTreeLeafPage *recipient,
     BufferPoolManager *buffer_pool_manager) {
-
+    const MappingType& tmp = GetItem(0);
+    IncreaseSize(-1);
+    recipient->CopyLastFrom(tmp);
+    page_id_t parent_id = GetParentPageId();
+    Page* parent_page = buffer_pool_manager->FetchPage(parent_id);
+    auto* parent_node = reinterpret_cast<BPlusTreeInternalPage<KeyType, ValueType, KeyComparator>*>(parent_page->GetData());
+    parent_node->SetKeyAt(parent_node->ValueIndex(GetPageId()), tmp.first);
+    buffer_pool_manager->UnpinPage(parent_id, true);
 }
 
 INDEX_TEMPLATE_ARGUMENTS
-void B_PLUS_TREE_LEAF_PAGE_TYPE::CopyLastFrom(const MappingType &item) {}
+void B_PLUS_TREE_LEAF_PAGE_TYPE::CopyLastFrom(const MappingType &item) {
+    int cur_size = GetSize();
+    assert(cur_size + 1 <= GetMaxSize());
+    array[cur_size] = item;
+    IncreaseSize(1);
+}
 /*
  * Remove the last key & value pair from this page to "recipient" page, then
  * update relavent key & value pair in its parent page.
@@ -277,12 +280,31 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::CopyLastFrom(const MappingType &item) {}
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveLastToFrontOf(
     BPlusTreeLeafPage *recipient, int parentIndex,
-    BufferPoolManager *buffer_pool_manager) {}
+    BufferPoolManager *buffer_pool_manager) {
+    int cur_size = GetSize();
+    const MappingType& tmp = GetItem(cur_size);
+    IncreaseSize(-1);
+    recipient->CopyFirstFrom(tmp, parentIndex, buffer_pool_manager); 
+}
 
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_LEAF_PAGE_TYPE::CopyFirstFrom(
     const MappingType &item, int parentIndex,
-    BufferPoolManager *buffer_pool_manager) {}
+    BufferPoolManager *buffer_pool_manager) {
+    int cur_size = GetSize();
+    assert(cur_size + 1 <= GetMaxSize());
+    for (int i = cur_size; i > 0; i--)
+        array[i] = array[i-1];
+    array[0] = item;
+
+    page_id_t parent_id = GetParentPageId();
+    Page* parent_page = buffer_pool_manager->FetchPage(parent_id);
+    auto* parent_node = reinterpret_cast<BPlusTreeInternalPage<KeyType, ValueType, KeyComparator>*>(parent_page->GetData());
+    parent_node->SetKeyAt(parentIndex, item.first);
+    IncreaseSize(1);
+    buffer_pool_manager->UnpinPage(parent_id, true);
+}
+
 
 /*****************************************************************************
  * DEBUG
