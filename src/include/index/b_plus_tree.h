@@ -73,7 +73,7 @@ private:
   public:
     explicit Checker(BufferPoolManager *b) : buffer(b) {}
     ~Checker() {
-      assert(buffer->Check());
+      //assert(buffer->Check());
     }
   private:
     BufferPoolManager *buffer;

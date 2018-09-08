@@ -111,7 +111,7 @@ int B_PLUS_TREE_LEAF_PAGE_TYPE::Insert(const KeyType &key,
     array[keyid_to_replace] = std::make_pair(key, value);
     IncreaseSize(1);
     //if (ENABLE_LOGGING) {
-    //LOG_INFO("[Leaf Insert]: Leaf page %d : %s\n", GetPageId(), ToString().c_str());
+   // LOG_INFO("[Leaf Insert]: Leaf page %d : %s\n", GetPageId(), ToString().c_str());
     return GetSize(); 
 }
 
@@ -132,11 +132,9 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveHalfTo(
     //recipient->SetNextPageId(GetNextPageId());
     //SetNextPageId(recipient->GetPageId());
     IncreaseSize(-1 * left_half);
-    /*
     LOG_INFO("[Leaf MoveHalfTo]: Leaf page %d : %s\n \
 Leaf page %d : %s\n", GetPageId(), ToString().c_str(),
                 recipient->GetPageId(), recipient->ToString().c_str());
-    */
 }
 
 INDEX_TEMPLATE_ARGUMENTS
@@ -212,11 +210,11 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveAllTo(BPlusTreeLeafPage *recipient,
     int cur_size = GetSize();
     recipient->CopyAllFrom(array, cur_size);
     recipient->SetNextPageId(GetNextPageId());
-    /*
+    SetNextPageId(INVALID_PAGE_ID);
+    IncreaseSize(-1 * cur_size);
     LOG_INFO("[Leaf MoveAllTo] Leaf page %d : %s \n \
 Leaf page %d : %s\n", GetPageId(), ToString().c_str(),
                 recipient->GetPageId(), recipient->ToString().c_str());
-    */
     /* reset parent page key */
     // Page* cur_page = buffer_pool_manager->FetchPage(cur_page_id);
     // auto* cur_node = reinterpret_cast<B_PLUS_TREE_LEAF_PAGE_TYPE*>(cur_page->GetData());
@@ -283,17 +281,15 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveFirstToEndOf(
     auto* parent_node = reinterpret_cast<BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator>*>(parent_page->GetData());
     parent_node->SetKeyAt(parent_node->ValueIndex(GetPageId()), tmp.first);
     buffer_pool_manager->UnpinPage(parent_id, true);
-    /*
     LOG_INFO("[Leaf MoveFirstToEndOf] Leaf page %d : %s \n \
 Leaf page %d : %s\n", GetPageId(), ToString().c_str(), 
                 recipient->GetPageId(), recipient->ToString().c_str());
-    */
 }
 
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_LEAF_PAGE_TYPE::CopyLastFrom(const MappingType &item) {
     int cur_size = GetSize();
-    assert(cur_size + 1 <= GetMaxSize());
+    //assert(cur_size + 1 <= GetMaxSize());
     array[cur_size] = item;
     IncreaseSize(1);
 }
@@ -314,11 +310,9 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveLastToFrontOf(
     auto* parent_page = reinterpret_cast<BPlusTreeInternalPage<KeyType, page_id_t, KeyComparator>*>(parent_node->GetData());
     int index = parent_page->ValueIndex(recipient->GetPageId());
     recipient->CopyFirstFrom(tmp, index, buffer_pool_manager); 
-    /*
     LOG_INFO("[Leaf MoveFirstToEndOf] Leaf page %d : %s \n \
 Leaf page %d : %s\n", GetPageId(), ToString().c_str(), 
                 recipient->GetPageId(), recipient->ToString().c_str());
-    */
 }
 
 INDEX_TEMPLATE_ARGUMENTS

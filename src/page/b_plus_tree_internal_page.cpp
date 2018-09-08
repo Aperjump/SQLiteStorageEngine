@@ -114,7 +114,7 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::PopulateNewRoot(
     const ValueType &new_value) {
     array[0].second = old_value;
     array[1] = std::make_pair(new_key, new_value);
-    IncreaseSize(1);
+    SetSize(2);
 }
 /*
  * Insert new_key & new_value pair right after the pair with its value ==
@@ -265,7 +265,6 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::MoveFirstToEndOf(
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_INTERNAL_PAGE_TYPE::CopyLastFrom(
     const MappingType &pair, BufferPoolManager *buffer_pool_manager) {
-    assert(GetSize() + 1 <= GetMaxSize());
     ValueType new_page_id = pair.second;
     /* update child node */
     Page* tmp_child_page = buffer_pool_manager->FetchPage(new_page_id);
