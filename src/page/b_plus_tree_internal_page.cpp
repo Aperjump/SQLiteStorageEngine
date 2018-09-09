@@ -162,10 +162,9 @@ INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_INTERNAL_PAGE_TYPE::CopyHalfFrom(
     MappingType *items, int size, BufferPoolManager *buffer_pool_manager) {
     /* This node should have size 0 */
-    assert(GetSize() == 0);
     for (int i = 0; i < size; i ++) {
-        array[i] = items[i];
-        ValueType tmp_page_id = ValueAt(i);
+        array[i+1] = items[i];
+        ValueType tmp_page_id = ValueAt(i+1);
         Page* tmp_page = buffer_pool_manager->FetchPage(tmp_page_id);
         auto tmp_node = reinterpret_cast<BPlusTreePage*>(tmp_page->GetData());
         tmp_node->SetParentPageId(GetPageId());

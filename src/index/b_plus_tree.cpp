@@ -164,6 +164,7 @@ void BPLUSTREE_TYPE::InsertIntoParent(BPlusTreePage *old_node,
         auto new_root_node = reinterpret_cast<B_PLUS_TREE_INTERNAL_PAGE_CUR_TYPE*>(new_root_page->GetData());
         new_root_node->Init(new_root_id, INVALID_PAGE_ID);
         root_page_id_ = new_root_id;
+        LOG_INFO("New Parent Node: %d\n", new_root_id);
         page_id_t old_page_id = old_node->GetPageId();
         page_id_t new_page_id = new_node->GetPageId();
         new_root_node->PopulateNewRoot(old_page_id, key, new_page_id); 
@@ -184,7 +185,8 @@ void BPLUSTREE_TYPE::InsertIntoParent(BPlusTreePage *old_node,
         return;
     } else {
         auto new_parent_node = Split(parent_node);
-        InsertIntoParent(parent_node, new_parent_node->KeyAt(0), new_parent_node, transaction);
+        InsertIntoParent(parent_node, new_parent_node->KeyAt(1), new_parent_node, transaction);
+        buffer_pool_manager_->UnpinPage(new_parent_node->GetPageId(), true);
     }
     buffer_pool_manager_->UnpinPage(parent_page_id, true);
 }
@@ -401,6 +403,7 @@ BPlusTreeLeafPage<KeyType, ValueType, KeyComparator> *BPLUSTREE_TYPE::FindLeafPa
         return nullptr;
     auto cur_node = reinterpret_cast<BPlusTreePage*>(root_page->GetData());
     Page* tmp_page = root_page;
+    B_PLUS_TREE_INTERNAL_PAGE_CUR_TYPE* test;
     while (!cur_node->IsLeafPage()) {
         auto internal_node = reinterpret_cast<B_PLUS_TREE_INTERNAL_PAGE_CUR_TYPE*>(tmp_page->GetData());
         page_id_t tmp_page_id;
@@ -411,6 +414,7 @@ BPlusTreeLeafPage<KeyType, ValueType, KeyComparator> *BPLUSTREE_TYPE::FindLeafPa
         buffer_pool_manager_->UnpinPage(tmp_page->GetPageId(), false);
         tmp_page = buffer_pool_manager_->FetchPage(tmp_page_id);
         cur_node = reinterpret_cast<BPlusTreePage*>(tmp_page->GetData());
+        test = reinterpret_cast<B_PLUS_TREE_INTERNAL_PAGE_CUR_TYPE*>(tmp_page->GetData());
     }
     auto leaf_node = reinterpret_cast<B_PLUS_TREE_LEAF_PAGE_TYPE*>(tmp_page->GetData());
     buffer_pool_manager_->UnpinPage(root_page_id_, false);
