@@ -6,6 +6,7 @@
 
 #include "common/exception.h"
 #include "page/b_plus_tree_internal_page.h"
+#include "common/logger.h"
 namespace cmudb {
 /*****************************************************************************
  * HELPER METHODS AND UTILITIES
@@ -156,6 +157,8 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::MoveHalfTo(
     recipient->CopyHalfFrom(array + half, GetSize() -  half, buffer_pool_manager);
     IncreaseSize((GetSize() - half) * -1);
     /* Note: maptype is <key, page_id>, each page_id points to a inner_node or leaf_node */
+    LOG_INFO("[Old Node %d]: %s \n [New Node %d]: %s\n", GetPageId(), ToString(false).c_str(), recipient->GetPageId(), 
+            recipient->ToString(false).c_str());
 }
 
 INDEX_TEMPLATE_ARGUMENTS

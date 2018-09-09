@@ -136,7 +136,6 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveHalfTo(
 Leaf page %d : %s\n", GetPageId(), ToString().c_str(),
                 recipient->GetPageId(), recipient->ToString().c_str());
 }
-
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_LEAF_PAGE_TYPE::CopyHalfFrom(MappingType *items, int size) {
     /* not sure whether this function can only be called from MoveHalfTp */

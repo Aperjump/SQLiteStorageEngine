@@ -113,7 +113,7 @@ bool BPLUSTREE_TYPE::InsertIntoLeaf(const KeyType &key, const ValueType &value,
         /* update parent node */
         rep_node->SetNextPageId(cur_node->GetNextPageId());
         cur_node->SetNextPageId(rep_node->GetPageId());
-        InsertIntoParent(cur_node, rep_node->KeyAt(0), rep_node);
+        InsertIntoParent(cur_node, rep_node->KeyAt(1), rep_node);
         buffer_pool_manager_->UnpinPage(rep_node->GetPageId(), true);
     }
     //buffer_pool_manager_->UnpinPage(target_node->GetPageId(), true);
@@ -187,6 +187,7 @@ void BPLUSTREE_TYPE::InsertIntoParent(BPlusTreePage *old_node,
         auto new_parent_node = Split(parent_node);
         InsertIntoParent(parent_node, new_parent_node->KeyAt(1), new_parent_node, transaction);
         buffer_pool_manager_->UnpinPage(new_parent_node->GetPageId(), true);
+        buffer_pool_manager_->UnpinPage(parent_node->GetPageId(), true);
     }
     buffer_pool_manager_->UnpinPage(parent_page_id, true);
 }
