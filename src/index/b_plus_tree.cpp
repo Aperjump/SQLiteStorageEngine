@@ -41,12 +41,17 @@ INDEX_TEMPLATE_ARGUMENTS
 bool BPLUSTREE_TYPE::GetValue(const KeyType &key,
                               std::vector<ValueType> &result,
                               Transaction *transaction) {
-  auto leaf_node = FindLeafPage(key, false); 
+  auto* leaf_node = FindLeafPage(key, false); 
   ValueType val;
-  bool fi = leaf_node->Lookup(key, val, comparator_);
-  if (fi)
-      result.push_back(val);
-  return fi;
+  bool ret = false;
+  if (!leaf_node) {
+    bool fi = leaf_node->Lookup(key, val, comparator_);
+    if (fi) {
+        result.push_back(val);
+        ret = true;
+    }
+  }
+  return ret;
 }
 
 /*****************************************************************************
@@ -111,12 +116,16 @@ bool BPLUSTREE_TYPE::InsertIntoLeaf(const KeyType &key, const ValueType &value,
         B_PLUS_TREE_LEAF_PAGE_TYPE* cur_node = target_node;
         B_PLUS_TREE_LEAF_PAGE_TYPE* rep_node = Split(target_node);
         /* update parent node */
+        if (comparator_(key, rep_node->KeyAt(0)) < 0)
+            cur_node->Insert(key, value, comparator_);
+        else
+            rep_node->Insert(key, value, comparator_);
         rep_node->SetNextPageId(cur_node->GetNextPageId());
         cur_node->SetNextPageId(rep_node->GetPageId());
-        InsertIntoParent(cur_node, rep_node->KeyAt(1), rep_node);
-        buffer_pool_manager_->UnpinPage(rep_node->GetPageId(), true);
+        InsertIntoParent(cur_node, rep_node->KeyAt(0), rep_node);
+        //buffer_pool_manager_->UnpinPage(rep_node->GetPageId(), true);
     }
-    //buffer_pool_manager_->UnpinPage(target_node->GetPageId(), true);
+    buffer_pool_manager_->UnpinPage(target_node->GetPageId(), true);
     return true;
 }
 /*
