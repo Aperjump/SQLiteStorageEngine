@@ -21,8 +21,9 @@
 #include "page/b_plus_tree_page.h"
 
 namespace cmudb {
-#define B_PLUS_TREE_INTERNAL_PAGE_TYPE \
-    BPlusTreeInternalPage<KeyType, ValueType, KeyComparator>
+
+#define B_PLUS_TREE_INTERNAL_PAGE_TYPE                                         \
+  BPlusTreeInternalPage<KeyType, ValueType, KeyComparator>
 
 template <typename KeyType, typename ValueType, typename KeyComparator>
 class BPlusTreeInternalPage : public BPlusTreePage {
