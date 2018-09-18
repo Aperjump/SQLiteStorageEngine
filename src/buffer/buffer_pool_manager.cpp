@@ -84,7 +84,6 @@ Page *BufferPoolManager::FetchPage(page_id_t page_id) {
     if (ENABLE_LOGGING) {
       while (res->GetLSN() > log_manager_->GetPersistentLSN()) {
         std::promise<void> promise;
-        log_manager_->WakeupFlushThread(&promise);
       }
     }
     disk_manager_->WritePage(res->page_id_, res->GetData());
@@ -202,7 +201,6 @@ Page *BufferPoolManager::NewPage(page_id_t &page_id) {
     if (ENABLE_LOGGING) {
       while (res->GetLSN() > log_manager_->GetPersistentLSN()) {
         std::promise<void> promise;
-        log_manager_->WakeupFlushThread(&promise);
       }
     }
     disk_manager_->WritePage(res->page_id_, res->GetData());
