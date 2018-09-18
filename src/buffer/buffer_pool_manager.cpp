@@ -57,7 +57,7 @@ Page *BufferPoolManager::FetchPage(page_id_t page_id) {
         tmp_page->pin_count_++;
         /* [bug]: current API can only make one thread access specific page 
          * at each time */
-        replacer_->Erase(tmp_page);
+        //replacer_->Erase(tmp_page);
         return tmp_page;
     }
     else {

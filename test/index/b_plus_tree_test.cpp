@@ -328,7 +328,7 @@ TEST(BPlusTreeTests, ScaleTest) {
   auto header_page = bpm->NewPage(page_id);
   (void)header_page;
 
-  int64_t scale = 10000;
+  int64_t scale = 1000;
   std::vector<int64_t> keys;
   for (int64_t key = 1; key < scale; key++) {
     keys.push_back(key);
@@ -345,8 +345,9 @@ TEST(BPlusTreeTests, ScaleTest) {
     rids.clear();
     index_key.SetFromInteger(key);
     tree.GetValue(index_key, rids);
+    std::cout << rids.size() << std::endl;
+    std::cout << "key is " << key << std::endl;
     EXPECT_EQ(rids.size(), 1);
-
     int64_t value = key & 0xFFFFFFFF;
     EXPECT_EQ(rids[0].GetSlotNum(), value);
   }
