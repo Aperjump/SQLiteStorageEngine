@@ -240,30 +240,7 @@ void ExtendibleHash<K, V>::Insert(const K &key, const V &value) {
   // for debug
   //dump(key);
 }
-template<typename K, typename V>
-void ExtendibleHash<K,V>::PCS() {
-    std::printf("current lists state: \n");
-    int buck_counter = 0;
-    for (auto iter = directory_.begin();
-            iter != directory_.end();
-            iter++) {
-        if (*iter == nullptr) {
-            //printf("Bucket num %d has 0 element:\n", buck_counter);
-            buck_counter++;
-            continue;
-        } else
-            printf("Bucket num %d has %zo elements: \n", buck_counter, (*iter)->items.size());
-        for (auto iter2 = (*iter)->items.begin(); 
-                iter2 != (*iter)->items.end();
-                iter2++) {
-            printf("%zo", HashKey(iter2->first));
-            printf(" ");
-        }
-        printf("\n");
-        buck_counter++;
-    }
-    printf("Total bucket number is %d \n", bucket_count_);
-}
+
 /*
  * for debug, dump internal data structure
  */

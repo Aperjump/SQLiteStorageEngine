@@ -56,8 +56,8 @@ public:
 
   void Insert(const K &key, const V &value) override;
 
-  size_t Size() const  { return pair_count; }
-  void PCS();
+  size_t Size() const override { return pair_count; }
+
 private:
   std::unique_ptr<Bucket> split(std::shared_ptr<Bucket> &);
   size_t bucketIndex(const K &key);

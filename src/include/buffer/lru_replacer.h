@@ -9,21 +9,31 @@
 
 #pragma once
 
-#include "buffer/replacer.h"
-#include "hash/extendible_hash.h"
-#include <mutex>
-#include <list>
 #include <unordered_map>
+#include <mutex>
+#include <memory>
+
+#include "buffer/replacer.h"
 
 namespace cmudb {
 
 template <typename T> class LRUReplacer : public Replacer<T> {
+  struct node {
+    node() = default;
+    explicit node(T d, node *p = nullptr) : data(d), pre(p) {}
+    T data;
+    node *pre = nullptr;
+    std::unique_ptr<node> next;
+  };
 public:
-  // T will be Page*
   // do not change public interface
   LRUReplacer();
 
   ~LRUReplacer();
+
+  // disable copy
+  LRUReplacer(const LRUReplacer &) = delete;
+  LRUReplacer &operator=(const LRUReplacer &) = delete;
 
   void Insert(const T &value);
 
@@ -34,10 +44,14 @@ public:
   size_t Size();
 
 private:
-  // add your member variables here
-  std::mutex mut;
-  std::list<T> val;
-  std::unordered_map<T, typename std::list<T>::iterator> record;
+  // invariant check
+  void check();
+
+  mutable std::mutex mutex_;
+  std::unique_ptr<node> head_;
+  node *tail_;
+  size_t size_;
+  std::unordered_map<T, node *> table_;
 };
 
 } // namespace cmudb
