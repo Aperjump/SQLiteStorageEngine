@@ -63,9 +63,9 @@ private:
   size_t bucketIndex(const K &key);
   //void dump(const K &key);
 
-  mutable std::mutex mutex_;  // to protect shared data structure
+  mutable std::mutex latch_;  // to protect shared data structure
   const size_t bucket_size_;  // largest number of elements in a bucket
-  int bucket_count_;          // number of buckets in use
+  int bucket_num_;          // number of buckets in use
   int depth;                  // global depth
   size_t pair_count;          // key-value number in table
   std::vector<std::shared_ptr<Bucket>> directory_;  // smart pointer for auto memory management
