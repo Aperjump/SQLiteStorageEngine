@@ -57,12 +57,10 @@ public:
   void Insert(const K &key, const V &value) override;
 
   size_t Size() const override { return pair_count; }
-
 private:
   std::unique_ptr<Bucket> split(std::shared_ptr<Bucket> &);
-  size_t bucketIndex(const K &key);
   //void dump(const K &key);
-
+  size_t Bucket_Index(const K &key);
   mutable std::mutex latch_;  // to protect shared data structure
   const size_t bucket_size_;  // largest number of elements in a bucket
   int bucket_num_;          // number of buckets in use

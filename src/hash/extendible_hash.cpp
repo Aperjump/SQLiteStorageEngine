@@ -71,7 +71,7 @@ int ExtendibleHash<K, V>::GetNumBuckets() const {
 template <typename K, typename V>
 bool ExtendibleHash<K, V>::Find(const K &key, V &value) {
   std::lock_guard<std::mutex> lock(latch_);
-  size_t index = bucketIndex(key);
+  size_t index = Bucket_Index(key);
 
   if (directory_[index]) {
     auto bucket = directory_[index];
@@ -91,7 +91,7 @@ template <typename K, typename V>
 bool ExtendibleHash<K, V>::Remove(const K &key) {
   //size_t count = 0;
   std::lock_guard<std::mutex> lock(latch_);
-  size_t index = bucketIndex(key);
+  size_t index = Bucket_Index(key);
 
   if (directory_[index]) {
     auto bucket = directory_[index];
@@ -143,7 +143,7 @@ ExtendibleHash<K, V>::split(std::shared_ptr<Bucket> &b) {
  * should be called when holding the lock
  */
 template <typename K, typename V>
-size_t ExtendibleHash<K, V>::bucketIndex(const K &key) {
+size_t ExtendibleHash<K, V>::Bucket_Index(const K &key) {
   return HashKey(key) & ((1 << depth) - 1);
 }
 
@@ -155,7 +155,7 @@ size_t ExtendibleHash<K, V>::bucketIndex(const K &key) {
 template <typename K, typename V>
 void ExtendibleHash<K, V>::Insert(const K &key, const V &value) {
   std::lock_guard<std::mutex> lock(latch_);
-  size_t bucket_id = bucketIndex(key);
+  size_t bucket_id = Bucket_Index(key);
 
   assert(bucket_id < directory_.size());
   if (directory_[bucket_id] == nullptr) {
